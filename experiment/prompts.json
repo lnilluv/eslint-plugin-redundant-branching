@@ -1,0 +1,155 @@
+{
+  "systemPrompt": "You are a TypeScript developer. Write a single TypeScript file implementing the requested functionality. Include type definitions and exports. Do not include explanations or comments about your approach — just write the code.",
+  "prompts": [
+    {
+      "id": "H01",
+      "category": "high",
+      "text": "Write a TypeScript function `getHttpStatusInfo` that takes a numeric HTTP status code (200, 201, 301, 400, 401, 403, 404, 500, 502, 503) and returns an object containing: the standard status text, a user-friendly message suitable for display in a UI, and a boolean indicating whether the client should retry the request."
+    },
+    {
+      "id": "H02",
+      "category": "high",
+      "text": "Write a TypeScript React component called `StatusBadge` that accepts a `severity` prop of type `'info' | 'warning' | 'error' | 'success'`. It should render a `<span>` with the appropriate background color, text color, and icon character (use Unicode emoji) based on the severity."
+    },
+    {
+      "id": "H03",
+      "category": "high",
+      "text": "Write a TypeScript function `getFileTypeInfo` that takes a file extension string (e.g., `\".pdf\"`, `\".png\"`, `\".ts\"`, `\".mp4\"`, `\".csv\"`) and returns the MIME type, a human-readable category name (e.g., \"Document\", \"Image\"), and a boolean indicating whether a browser can preview it inline."
+    },
+    {
+      "id": "H04",
+      "category": "high",
+      "text": "Write a TypeScript function `getPlanLimits` that accepts a subscription tier `'free' | 'starter' | 'pro' | 'enterprise'` and returns an object with: storage limit in GB, maximum team members, monthly API call quota, and whether custom branding is available."
+    },
+    {
+      "id": "H05",
+      "category": "high",
+      "text": "Write a TypeScript function `formatNotification` that accepts a notification type `'message' | 'mention' | 'system' | 'alert' | 'reminder'` and the notification body text. Return an object with: a title prefix string, the formatted body, a priority number (1-5), and a sound file name."
+    },
+    {
+      "id": "H06",
+      "category": "high",
+      "text": "Write a TypeScript function `getPaymentMethodDetails` that takes a payment type `'credit_card' | 'debit_card' | 'paypal' | 'bank_transfer' | 'crypto'` and returns the processing fee as a percentage, estimated settlement time in hours, a display name for the UI, and an icon identifier string."
+    },
+    {
+      "id": "H07",
+      "category": "high",
+      "text": "Write a TypeScript function `getLocaleSettings` that accepts a locale code `'en-US' | 'fr-FR' | 'de-DE' | 'ja-JP' | 'pt-BR'` and returns the date format pattern, the thousands separator, the decimal separator, and the text direction ('ltr' or 'rtl')."
+    },
+    {
+      "id": "H08",
+      "category": "high",
+      "text": "Write a TypeScript function `getLogLevelConfig` that takes a log level `'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'` and returns the numeric severity, the console method to use, an ANSI color code string, and a boolean for whether to capture a stack trace."
+    },
+    {
+      "id": "H09",
+      "category": "high",
+      "text": "Write a TypeScript function `getAnimalProfile` that takes an animal kind `'dog' | 'cat' | 'rabbit' | 'parrot' | 'goldfish'` and returns an object with: average lifespan in years, typical adult weight range as a string, whether it needs outdoor access, and a fun fact string."
+    },
+    {
+      "id": "H10",
+      "category": "high",
+      "text": "Write a TypeScript function `getBreakpointConfig` that accepts a breakpoint name `'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'` and returns an object with: minimum width in pixels, maximum width in pixels, default number of grid columns, and the recommended gutter size in pixels."
+    },
+    {
+      "id": "M11",
+      "category": "medium",
+      "text": "Write a TypeScript function `validateFormField` that takes a field type (`'email' | 'phone' | 'url' | 'zip' | 'username'`), a value string, and an optional `required` boolean. Return an object with `isValid`, `errorMessage` (or null), and the sanitized value."
+    },
+    {
+      "id": "M12",
+      "category": "medium",
+      "text": "Write a TypeScript React hook called `useCountdown` that takes a target date and returns the days, hours, minutes, and seconds remaining, a boolean `isExpired`, and a formatted display string."
+    },
+    {
+      "id": "M13",
+      "category": "medium",
+      "text": "Write a TypeScript function `calculateShippingOptions` that takes a package weight in kg and a destination zone (`'domestic' | 'europe' | 'asia' | 'americas' | 'oceania'`). Return an array of shipping options, each with a carrier name, estimated days, and price."
+    },
+    {
+      "id": "M14",
+      "category": "medium",
+      "text": "Write a TypeScript class `OrderStateMachine` with states `'draft' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'`. Include a `transition(action: string)` method that enforces valid transitions and a `getAvailableActions()` method."
+    },
+    {
+      "id": "M15",
+      "category": "medium",
+      "text": "Write a TypeScript function `formatRelativeDate` that takes a `Date` and the current date, and returns a human-friendly string: \"just now\", \"5 minutes ago\", \"2 hours ago\", \"yesterday\", \"last Monday\", \"March 15\", or \"March 15, 2024\" depending on how far in the past it is."
+    },
+    {
+      "id": "M16",
+      "category": "medium",
+      "text": "Write a TypeScript function `parseExpression` that takes a string containing a simple arithmetic expression (numbers, +, -, *, /, parentheses) and returns the evaluated numeric result. Support operator precedence."
+    },
+    {
+      "id": "M17",
+      "category": "medium",
+      "text": "Write a TypeScript middleware function `authMiddleware` for an Express-compatible server. It should check for authentication via: Bearer token in Authorization header, API key in X-Api-Key header, or a session cookie. Return a user object or throw an appropriate error."
+    },
+    {
+      "id": "M18",
+      "category": "medium",
+      "text": "Write a TypeScript function `generateTableOfContents` that takes a Markdown string and returns an array of heading objects, each with: level (1-6), text, and a URL-safe slug. Support nested heading levels."
+    },
+    {
+      "id": "M19",
+      "category": "medium",
+      "text": "Write a TypeScript function `convertUnits` that takes a numeric value, a source unit, and a target unit. Support conversions between: km/miles/meters, kg/lbs/oz, celsius/fahrenheit/kelvin. Throw on incompatible unit pairs."
+    },
+    {
+      "id": "M20",
+      "category": "medium",
+      "text": "Write a TypeScript function `getInputPlaceholder` that takes an HTML input type (`'email' | 'tel' | 'url' | 'search' | 'number' | 'date' | 'password'`) and a locale (`'en' | 'es' | 'fr'`). Return the appropriate placeholder text in the specified locale."
+    },
+    {
+      "id": "L21",
+      "category": "low",
+      "text": "Write a TypeScript function `binarySearch<T>` that takes a sorted array, a target value, and a comparator function. Return the index of the target or -1 if not found. Include proper generic typing."
+    },
+    {
+      "id": "L22",
+      "category": "low",
+      "text": "Write a TypeScript function `debounce<T extends (...args: any[]) => any>` that returns a debounced version of the input function. Accept a delay in milliseconds and an optional `leading` boolean. Preserve the function's return type as a Promise."
+    },
+    {
+      "id": "L23",
+      "category": "low",
+      "text": "Write a TypeScript function `deepMerge` that recursively merges two objects. Arrays should be concatenated, nested objects merged, and primitives overwritten by the second argument. Include proper TypeScript generics."
+    },
+    {
+      "id": "L24",
+      "category": "low",
+      "text": "Write a TypeScript function `flattenDeep<T>` that takes a nested array of arbitrary depth and returns a flat array. Do not use `Array.prototype.flat`. Include a generic type signature."
+    },
+    {
+      "id": "L25",
+      "category": "low",
+      "text": "Write a TypeScript function `permutations` that takes a string and returns all unique character permutations as an array. Handle duplicate characters correctly."
+    },
+    {
+      "id": "L26",
+      "category": "low",
+      "text": "Write a TypeScript class `EventEmitter<Events extends Record<string, any[]>>` with type-safe `on`, `off`, `once`, and `emit` methods. The event names and their argument types should be inferred from the generic parameter."
+    },
+    {
+      "id": "L27",
+      "category": "low",
+      "text": "Write a TypeScript function `parseISO8601` that takes a string in ISO 8601 format and returns an object with year, month, day, hours, minutes, seconds, and timezone offset in minutes. Do not use the Date constructor. Handle both `Z` and `±HH:MM` timezone formats."
+    },
+    {
+      "id": "L28",
+      "category": "low",
+      "text": "Write a TypeScript function `levenshteinDistance` that computes the edit distance between two strings using dynamic programming. Return the distance as a number."
+    },
+    {
+      "id": "L29",
+      "category": "low",
+      "text": "Write a TypeScript function `toRomanNumeral` that converts an integer (1-3999) to its Roman numeral string representation. Throw on out-of-range input."
+    },
+    {
+      "id": "L30",
+      "category": "low",
+      "text": "Write a TypeScript function `retry<T>` that wraps an async function and retries it on failure with exponential backoff. Accept options for max retries, initial delay, backoff multiplier, and an optional `shouldRetry(error)` predicate."
+    }
+  ]
+}
