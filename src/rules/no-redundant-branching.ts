@@ -1,7 +1,12 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { RuleListener, RuleModule } from "@typescript-eslint/utils/ts-eslint";
 import type * as types from "@typescript-eslint/types";
-import { extractTernaryChain, extractIfElseChain, extractSwitchChain } from "../utils/chain-extractor.js";
+import {
+  extractTernaryChain,
+  extractIfElseChain,
+  extractSwitchChain,
+  extractEarlyReturnChain,
+} from "../utils/chain-extractor.js";
 import { groupChains } from "../utils/normalizer.js";
 import { generateLookupFix } from "../utils/autofix.js";
 import type { ChainDescriptor } from "../utils/types.js";
@@ -80,6 +85,36 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
     const getSource = (node: types.TSESTree.Node): string => {
       return sourceCode.getText(node);
     };
+
+    /**
+     * Collect early-return chains from a function body.
+     *
+     * Unlike ternary/if-else/switch patterns where 2+ independent chains must exist
+     * to trigger a report, an early-return function IS the redundancy itself — each
+     * branch returns an object with the same keys, which should be a lookup table.
+     * We create one descriptor per branch so they self-group and meet the threshold.
+     */
+    function maybeCollectEarlyReturnChain(
+      functionBody: types.TSESTree.BlockStatement,
+      scopeNode: types.TSESTree.Node
+    ): void {
+      if (!includeIfElseChains) return;
+
+      const result = extractEarlyReturnChain(functionBody, { getSource });
+      if (result.descriptor) {
+        result.descriptor.scopeId = getScopeKey(scopeNode);
+
+        for (const branch of result.descriptor.branches) {
+          const reportNode = branch.sourceNode ?? result.descriptor.node;
+          const branchDescriptor: ChainDescriptor = {
+            ...result.descriptor,
+            node: reportNode,
+            loc: reportNode.loc ?? result.descriptor.loc,
+          };
+          chains.push(branchDescriptor);
+        }
+      }
+    }
 
     /**
      * Get a scope key for a node based on its enclosing function scope.
@@ -222,6 +257,35 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
         if (result.descriptor) {
           result.descriptor.scopeId = getScopeKey(node);
           chains.push(result.descriptor);
+        }
+      },
+
+      FunctionDeclaration(node) {
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      FunctionExpression(node) {
+        // Skip FunctionExpression nodes that are children of MethodDefinition —
+        // those are handled by the MethodDefinition visitor to avoid double-processing.
+        if (node.parent?.type === AST_NODE_TYPES.MethodDefinition) {
+          return;
+        }
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      ArrowFunctionExpression(node) {
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      MethodDefinition(node) {
+        if (node.value.body && node.value.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.value.body, node);
         }
       },
 

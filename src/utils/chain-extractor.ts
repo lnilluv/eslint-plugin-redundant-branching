@@ -21,6 +21,79 @@ function getNodeDiscriminant(left: types.TSESTree.Node, right: types.TSESTree.No
   return leftIsLit ? right : left;
 }
 
+function getReturnStatementAndObject(
+  consequent: types.TSESTree.Statement
+): { returnStatement: types.TSESTree.ReturnStatement; objectExpression: types.TSESTree.ObjectExpression } | null {
+  if (consequent.type === AST_NODE_TYPES.ReturnStatement) {
+    const ret = consequent as types.TSESTree.ReturnStatement;
+    if (ret.argument?.type === AST_NODE_TYPES.ObjectExpression) {
+      return {
+        returnStatement: ret,
+        objectExpression: ret.argument as types.TSESTree.ObjectExpression,
+      };
+    }
+    return null;
+  }
+
+  if (consequent.type === AST_NODE_TYPES.BlockStatement) {
+    const block = consequent as types.TSESTree.BlockStatement;
+    if (block.body.length !== 1) {
+      return null;
+    }
+
+    const onlyStmt = block.body[0];
+    if (onlyStmt?.type !== AST_NODE_TYPES.ReturnStatement) {
+      return null;
+    }
+
+    const ret = onlyStmt as types.TSESTree.ReturnStatement;
+    if (ret.argument?.type === AST_NODE_TYPES.ObjectExpression) {
+      return {
+        returnStatement: ret,
+        objectExpression: ret.argument as types.TSESTree.ObjectExpression,
+      };
+    }
+  }
+
+  return null;
+}
+
+function getObjectKeySignature(obj: types.TSESTree.ObjectExpression): string | null {
+  const keys: string[] = [];
+
+  for (const prop of obj.properties) {
+    if (prop.type === AST_NODE_TYPES.SpreadElement) {
+      return null;
+    }
+
+    if (prop.type !== AST_NODE_TYPES.Property) {
+      return null;
+    }
+
+    const property = prop as types.TSESTree.Property;
+    if (property.computed) {
+      return null;
+    }
+
+    if (property.key.type === AST_NODE_TYPES.Identifier) {
+      keys.push((property.key as types.TSESTree.Identifier).name);
+      continue;
+    }
+
+    if (property.key.type === AST_NODE_TYPES.Literal) {
+      const literalKey = (property.key as types.TSESTree.Literal).value;
+      if (typeof literalKey === "string" || typeof literalKey === "number") {
+        keys.push(String(literalKey));
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  return keys.sort().join("|");
+}
+
 /**
  * Extract a ternary chain from a ConditionalExpression.
  */
@@ -197,6 +270,103 @@ export function extractIfElseChain(
       }
     } else {
       return { descriptor: null, scopeId: "", assignmentTarget: null };
+    }
+  }
+
+  return { descriptor: null, scopeId: "", assignmentTarget: null };
+}
+
+/**
+ * Extract an early-return chain from sequential if statements in a function body.
+ */
+export function extractEarlyReturnChain(
+  functionBody: types.TSESTree.BlockStatement,
+  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+): ChainExtractorResult {
+  const statements = functionBody.body;
+
+  for (let start = 0; start < statements.length; start++) {
+    const first = statements[start];
+    if (first?.type !== AST_NODE_TYPES.IfStatement) {
+      continue;
+    }
+
+    const branches: Branch[] = [];
+    let discriminant: string | null = null;
+    let discriminantNode: types.TSESTree.Node | null = null;
+    let objectKeySignature: string | null = null;
+    let index = start;
+
+    while (index < statements.length) {
+      const statement = statements[index];
+      if (statement?.type !== AST_NODE_TYPES.IfStatement) {
+        break;
+      }
+
+      const ifStatement = statement as types.TSESTree.IfStatement;
+      if (ifStatement.alternate) {
+        break;
+      }
+
+      if (ifStatement.test.type !== AST_NODE_TYPES.BinaryExpression || ifStatement.test.operator !== "===") {
+        break;
+      }
+
+      const discInfo = extractDiscriminant(ifStatement.test as types.TSESTree.BinaryExpression);
+      if (!discInfo) {
+        break;
+      }
+
+      if (discriminant === null) {
+        discriminant = discInfo.discriminant;
+        discriminantNode = getNodeDiscriminant(ifStatement.test.left, ifStatement.test.right);
+      } else if (discInfo.discriminant !== discriminant) {
+        break;
+      }
+
+      const returnInfo = getReturnStatementAndObject(ifStatement.consequent);
+      if (!returnInfo) {
+        break;
+      }
+
+      const currentSignature = getObjectKeySignature(returnInfo.objectExpression);
+      if (!currentSignature) {
+        break;
+      }
+
+      if (objectKeySignature === null) {
+        objectKeySignature = currentSignature;
+      } else if (currentSignature !== objectKeySignature) {
+        break;
+      }
+
+      branches.push({
+        testCode: getSourceText(ifStatement.test, sourceCode),
+        testValue: discInfo.value,
+        consequent: returnInfo.returnStatement,
+        sourceNode: ifStatement,
+      });
+
+      index++;
+    }
+
+    if (branches.length >= 2 && discriminant && discriminantNode) {
+      const possibleFallback = statements[index];
+      const fallback = possibleFallback?.type === AST_NODE_TYPES.ReturnStatement ? possibleFallback : null;
+
+      const descriptor: ChainDescriptor = {
+        kind: "early-return",
+        discriminant,
+        discriminantNode,
+        branches,
+        fallback,
+        node: functionBody,
+        assignmentTarget: null,
+        loc: functionBody.loc!,
+        scopeId: "",
+      };
+
+      return { descriptor, scopeId: "", assignmentTarget: null };
     }
   }
 

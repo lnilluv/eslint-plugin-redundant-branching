@@ -99,6 +99,25 @@ const y = status === 'a' ? 'Alpha' : status === 'b' ? 'Beta' : 'Other';
         `,
         options: [{ includeIfElseChains: false }],
       },
+      // Single early-return block (below threshold)
+      {
+        code: `
+function getConfig(role: string) {
+  if (role === 'admin') return { canEdit: true };
+  return { canEdit: false };
+}
+        `,
+      },
+      // Early-return blocks with non-matching discriminants should not be detected
+      {
+        code: `
+function getUserConfig(role: string, plan: string) {
+  if (role === 'viewer') return { canEdit: false, label: 'Viewer' };
+  if (plan === 'pro') return { canEdit: true, label: 'Pro' };
+  return { canEdit: false, label: 'Unknown' };
+}
+        `,
+      },
     ],
     invalid: [
       // Scenario 1: 3 ternary chains same variable => violation + autofix
@@ -460,6 +479,50 @@ const { x, y, z } = _status_LOOKUP[status] ?? _status_DEFAULT;
         `,
         errors: [
           { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Early-return object blocks on same discriminant (one report per branch)
+      {
+        code: `
+function getUserConfig(role: string) {
+  if (role === 'viewer') return { canEdit: false, label: 'Viewer' };
+  if (role === 'editor') return { canEdit: true, label: 'Editor' };
+  if (role === 'admin') return { canEdit: true, label: 'Admin' };
+  return { canEdit: false, label: 'Unknown' };
+}
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Early-return with block-wrapped returns
+      {
+        code: `
+function getTheme(mode: string) {
+  if (mode === 'dark') { return { bg: '#000', fg: '#fff' }; }
+  if (mode === 'light') { return { bg: '#fff', fg: '#000' }; }
+  return { bg: '#888', fg: '#333' };
+}
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Early-return arrow function object blocks on same discriminant
+      {
+        code: `
+const getConfig = (status: string) => {
+  if (status === 'active') return { label: 'Active', color: 'green' };
+  if (status === 'inactive') return { label: 'Inactive', color: 'gray' };
+  return { label: 'Unknown', color: 'black' };
+};
+        `,
+        errors: [
           { messageId: "redundantBranching" },
           { messageId: "redundantBranching" },
         ],

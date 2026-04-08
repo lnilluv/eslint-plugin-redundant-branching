@@ -4,10 +4,12 @@ export interface Branch {
   testCode: string;
   testValue: string;
   consequent: types.TSESTree.Node;
+  /** Original AST node for error reporting (e.g., the IfStatement). Optional. */
+  sourceNode?: types.TSESTree.Node;
 }
 
 export interface ChainDescriptor {
-  kind: "ternary" | "if-else" | "switch";
+  kind: "ternary" | "if-else" | "switch" | "early-return";
   discriminant: string;
   discriminantNode: types.TSESTree.Node;
   branches: Branch[];
