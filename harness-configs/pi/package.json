@@ -1,0 +1,15 @@
+{
+  "name": "pi-lookup-lint",
+  "version": "0.1.0",
+  "description": "Auto-lint redundant branching patterns into lookup tables after every AI edit",
+  "type": "module",
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  },
+  "peerDependencies": {
+    "eslint": ">=9.0.0",
+    "eslint-plugin-lookup-table": ">=0.0.1"
+  },
+  "keywords": ["pi-extension", "eslint", "lookup-table", "lint"],
+  "license": "MIT"
+}
