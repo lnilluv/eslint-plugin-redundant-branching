@@ -1,7 +1,7 @@
-# eslint-plugin-redundant-branching
+# eslint-plugin-lookup-table
 
-[![npm version](https://img.shields.io/npm/v/eslint-plugin-redundant-branching.svg)](https://www.npmjs.com/package/eslint-plugin-redundant-branching)
-[![license](https://img.shields.io/npm/l/eslint-plugin-redundant-branching.svg)](LICENSE)
+[![npm version](https://img.shields.io/npm/v/eslint-plugin-lookup-table.svg)](https://www.npmjs.com/package/eslint-plugin-lookup-table)
+[![license](https://img.shields.io/npm/l/eslint-plugin-lookup-table.svg)](LICENSE)
 
 Finds repeated conditional logic on the same variable and replaces it with a lookup table.
 
@@ -52,7 +52,7 @@ One row per case. One place to edit.
 ## Install
 
 ```bash
-npm install --save-dev eslint-plugin-redundant-branching
+npm install --save-dev eslint-plugin-lookup-table
 ```
 
 Requires ESLint 9+ (flat config).
@@ -61,12 +61,12 @@ Requires ESLint 9+ (flat config).
 
 ```javascript
 // eslint.config.js
-import redundantBranching from "eslint-plugin-redundant-branching";
+import lookupTable from "eslint-plugin-lookup-table";
 
 export default [
   {
-    plugins: { "redundant-branching": redundantBranching },
-    rules: { "redundant-branching/no-redundant-branching": "error" },
+    plugins: { "lookup-table": lookupTable },
+    rules: { "lookup-table/no-redundant-branching": "error" },
   },
 ];
 ```
@@ -74,8 +74,8 @@ export default [
 Or use the recommended config:
 
 ```javascript
-import redundantBranching from "eslint-plugin-redundant-branching";
-export default [redundantBranching.configs.recommended];
+import lookupTable from "eslint-plugin-lookup-table";
+export default [lookupTable.configs.recommended];
 ```
 
 ---
@@ -106,7 +106,7 @@ The rule finds 2+ conditional structures in the same scope that branch on the sa
 ## Options
 
 ```javascript
-"redundant-branching/no-redundant-branching": ["error", {
+"lookup-table/no-redundant-branching": ["error", {
   threshold: 2,                  // chains needed to trigger (default: 2)
   includeSwitchStatements: true, // detect switch statements (default: true)
   includeIfElseChains: true,     // detect if-else and early-return (default: true)
@@ -176,8 +176,8 @@ src/
 ## Contributing
 
 ```bash
-git clone https://github.com/lnilluv/eslint-plugin-redundant-branching.git
-cd eslint-plugin-redundant-branching
+git clone https://github.com/lnilluv/eslint-plugin-lookup-table.git
+cd eslint-plugin-lookup-table
 npm install
 npm test        # 32 tests
 npm run typecheck

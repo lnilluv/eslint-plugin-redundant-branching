@@ -1,5 +1,5 @@
 {
-  "name": "eslint-plugin-redundant-branching",
+  "name": "eslint-plugin-lookup-table",
   "version": "0.0.1",
   "description": "Detect redundant conditional chains and suggest lookup tables",
   "type": "module",

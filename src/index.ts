@@ -1,14 +1,14 @@
 import noRedundantBranching, { name as ruleName } from "./rules/no-redundant-branching.js";
 
 const plugin = {
-  name: "redundant-branching",
+  name: "lookup-table",
   rules: {
     [ruleName]: noRedundantBranching,
   },
   configs: {
     recommended: {
       rules: {
-        "redundant-branching/no-redundant-branching": "error",
+        "lookup-table/no-redundant-branching": "error",
       },
     },
   },

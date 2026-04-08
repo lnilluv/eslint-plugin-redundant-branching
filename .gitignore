@@ -12,5 +12,9 @@ experiment/ai-corpus/
 evaluation/corpus/
 eval-results/
 
-# Collection infrastructure output
+# Evaluation and experiment artifacts
+evaluation/results/
+evaluation/scripts/
+experiment/ai-outputs/
+scripts/eval-repos.sh
 experiment/results/human-corpus-manifest.tsv
