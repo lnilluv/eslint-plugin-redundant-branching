@@ -1,7 +1,7 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type * as types from "@typescript-eslint/types";
 import type { Branch, ChainDescriptor } from "./types.js";
-import { extractDiscriminant, getLiteralValue, isLiteralValue } from "./discriminant.js";
+import { extractDiscriminant, getLiteralCanonicalKey, isLiteralValue } from "./discriminant.js";
 
 export interface ChainExtractorResult {
   descriptor: ChainDescriptor | null;
@@ -225,11 +225,12 @@ export function extractSwitchChain(
       fallback = caseClause;
     } else {
       // Normalize test value to match extractDiscriminant canonical form:
-      // If it's a literal, extract the actual value (not quoted source).
+      // If it's a literal, use the canonical key (type:value) to preserve type info.
       // Otherwise use the source text.
       let testValue: string;
       if (isLiteralValue(caseClause.test)) {
-        testValue = getLiteralValue(caseClause.test);
+        const canonical = getLiteralCanonicalKey(caseClause.test);
+        testValue = canonical ?? getSourceText(caseClause.test, sourceCode);
       } else {
         testValue = getSourceText(caseClause.test, sourceCode);
       }

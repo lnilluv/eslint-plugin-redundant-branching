@@ -263,7 +263,27 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
               return canFix;
             });
 
-            // Find the full contiguous range to replace
+            // Check if chains are contiguous (no other statements between them)
+            // Sort by start position and verify no gaps
+            const sortedTargets = topLevelChains
+              .map((chain) => findReplacementTarget(chain.node))
+              .sort((a, b) => (a.target.range?.[0] ?? 0) - (b.target.range?.[0] ?? 0));
+            
+            const sourceCodeText = sourceCode.getText();
+            let chainsAreContiguous = true;
+            for (let i = 0; i < sortedTargets.length - 1; i++) {
+              const currentEnd = sortedTargets[i]!.target.range?.[1] ?? 0;
+              const nextStart = sortedTargets[i + 1]!.target.range?.[0] ?? 0;
+              const textBetween = sourceCodeText.slice(currentEnd, nextStart);
+              // Check if there's anything other than whitespace, semicolons, or comments between
+              const hasNonTrivialCode = /[^\s;]/.test(textBetween.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''));
+              if (hasNonTrivialCode) {
+                chainsAreContiguous = false;
+                break;
+              }
+            }
+
+            // Find the full range to replace
             let firstStart = Infinity;
             let lastEnd = -Infinity;
 
@@ -279,8 +299,8 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
               }
             }
 
-            // Generate a single fix for the entire group (only if all can fix)
-            const fixResult = allCanFix
+            // Generate a single fix for the entire group (only if all can fix AND contiguous)
+            const fixResult = allCanFix && chainsAreContiguous
               ? generateLookupFix(topLevelChains, { getSource })
               : null;
 

@@ -51,6 +51,13 @@ function f2() {
 }
         `,
       },
+      // Different literal types are not grouped together (type preservation)
+      {
+        code: `
+const x = status === '1' ? 'alpha' : 'beta';
+const y = status === 1 ? 'Alpha' : 'Beta';
+        `,
+      },
       // threshold: 3, only 2 chains present
       {
         code: `
@@ -282,6 +289,29 @@ const { x, y } = _status_LOOKUP[status] ?? _status_DEFAULT;
         code: `
 const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
 let y = status === 'a' ? 'Alpha' : status === 'b' ? 'Beta' : 'Other';
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Side effects in consequent => no autofix (safety check)
+      {
+        code: `
+const x = status === 'a' ? doSomething() : status === 'b' ? doOther() : 'other';
+const y = status === 'a' ? doAlpha() : status === 'b' ? doBeta() : 'default';
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Chains separated by code => no autofix (contiguity check)
+      {
+        code: `
+const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
+console.log('side effect');
+const y = status === 'a' ? 'Alpha' : status === 'b' ? 'Beta' : 'Other';
         `,
         errors: [
           { messageId: "redundantBranching" },

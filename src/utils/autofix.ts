@@ -3,12 +3,47 @@ import type * as types from "@typescript-eslint/types";
 import type { AutofixResult, ChainDescriptor } from "./types.js";
 
 /**
+ * Convert a canonical key (format: "type:value") to a JavaScript literal.
+ * Returns null if the key is not a valid canonical key.
+ */
+function canonicalKeyToLiteral(key: string): string | null {
+  const colonIndex = key.indexOf(":");
+  if (colonIndex === -1) return null;
+  
+  const type = key.slice(0, colonIndex);
+  const value = key.slice(colonIndex + 1);
+  
+  switch (type) {
+    case "string":
+      return JSON.stringify(value);
+    case "number":
+      // Validate it's a valid number
+      if (!isFinite(Number(value))) return null;
+      return value;
+    case "bigint":
+      return `${value}n`;
+    case "boolean":
+      if (value === "true") return "true";
+      if (value === "false") return "false";
+      return null;
+    case "null":
+      return "null";
+    default:
+      return null;
+  }
+}
+
+/**
  * Check if a node contains any potentially unsafe side effects
  * that would make lookup table extraction unsafe.
+ * 
+ * SAFETY PRINCIPLE: Deny-by-default. Unknown node types are considered unsafe.
+ * Only explicitly whitelisted node types are considered safe.
  */
 function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
   const nodeType = node.type;
 
+  // === WHITELIST: Known safe node types (no side effects) ===
   switch (nodeType) {
     case AST_NODE_TYPES.Identifier:
     case AST_NODE_TYPES.Literal:
@@ -18,6 +53,12 @@ function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
     case AST_NODE_TYPES.JSXNamespacedName:
     case AST_NODE_TYPES.JSXIdentifier:
       return false;
+    default:
+      break;
+  }
+
+  // === BLACKLIST: Known unsafe node types (definitely have side effects) ===
+  switch (nodeType) {
     case AST_NODE_TYPES.CallExpression:
     case AST_NODE_TYPES.NewExpression:
     case AST_NODE_TYPES.AwaitExpression:
@@ -25,11 +66,14 @@ function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
     case AST_NODE_TYPES.AssignmentExpression:
     case AST_NODE_TYPES.UpdateExpression:
     case AST_NODE_TYPES.TaggedTemplateExpression:
+    case AST_NODE_TYPES.ImportExpression:
+    case AST_NODE_TYPES.ChainExpression: // Optional chaining can trigger getters with side effects
       return true;
     default:
       break;
   }
 
+  // === RECURSIVE CASES: Check children ===
   switch (nodeType) {
     case AST_NODE_TYPES.ConditionalExpression: {
       const cond = node as types.TSESTree.ConditionalExpression;
@@ -49,6 +93,9 @@ function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
     }
     case AST_NODE_TYPES.UnaryExpression: {
       const unary = node as types.TSESTree.UnaryExpression;
+      // delete operator has side effects
+      if (unary.operator === "delete") return true;
+      // typeof, void, !, -, +, ~, etc. are safe if operand is safe
       return hasUnsafeSideEffects(unary.argument);
     }
     case AST_NODE_TYPES.SequenceExpression: {
@@ -81,9 +128,24 @@ function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
       return block.body.some((s) => hasUnsafeSideEffects(s));
     }
     case AST_NODE_TYPES.MemberExpression:
+      // Member access like obj.prop is generally safe, but optional chaining
+      // is handled above as ChainExpression
       return false;
+    case AST_NODE_TYPES.TemplateLiteral: {
+      const tmpl = node as types.TSESTree.TemplateLiteral;
+      return tmpl.expressions.some((e) => hasUnsafeSideEffects(e));
+    }
+    case AST_NODE_TYPES.ExpressionStatement: {
+      const stmt = node as types.TSESTree.ExpressionStatement;
+      return hasUnsafeSideEffects(stmt.expression);
+    }
+    case AST_NODE_TYPES.ReturnStatement: {
+      const ret = node as types.TSESTree.ReturnStatement;
+      return ret.argument ? hasUnsafeSideEffects(ret.argument) : false;
+    }
+    // === DENY BY DEFAULT: Unknown node types are unsafe ===
     default:
-      return false;
+      return true;
   }
 }
 
@@ -217,7 +279,9 @@ export function generateLookupFix(
       const objProps = entry.assignments
         .map((a) => `${a.variableName}: ${a.valueCode}`)
         .join(", ");
-      return `  ${JSON.stringify(entry.key)}: { ${objProps} }`;
+      // Convert canonical key to proper JS literal, or use as-is if not canonical
+      const keyLiteral = canonicalKeyToLiteral(entry.key) ?? JSON.stringify(entry.key);
+      return `  ${keyLiteral}: { ${objProps} }`;
     })
     .join(",\n");
 

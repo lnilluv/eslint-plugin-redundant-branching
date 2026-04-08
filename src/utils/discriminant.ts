@@ -60,10 +60,45 @@ function serializeNode(node: types.TSESTree.Node): string {
 
 /**
  * Get string value of a literal node.
+ * @deprecated Use getLiteralCanonicalKey instead to preserve type information
  */
 export function getLiteralValue(node: types.TSESTree.Node): string {
   const lit = node as types.TSESTree.Literal;
   return String(lit.value);
+}
+
+/**
+ * Get a canonical key for a literal that includes type information.
+ * This ensures '1', 1, and 1n are treated as different values.
+ * Format: "type:value" where type is 'string', 'number', 'bigint', 'boolean', or 'null'
+ */
+export function getLiteralCanonicalKey(node: types.TSESTree.Node): string | null {
+  if (!isLiteralValue(node)) {
+    return null;
+  }
+  const lit = node as types.TSESTree.Literal;
+  const value = lit.value;
+  
+  if (value === null) {
+    return "null:null";
+  }
+  
+  const type = typeof value;
+  if (type === "string") {
+    return `string:${value}`;
+  }
+  if (type === "number") {
+    return `number:${value}`;
+  }
+  if (type === "bigint") {
+    return `bigint:${value.toString()}`;
+  }
+  if (type === "boolean") {
+    return `boolean:${value}`;
+  }
+  
+  // Unknown type - treat as unsafe
+  return null;
 }
 
 /**
@@ -93,13 +128,15 @@ export function extractDiscriminant(
 
   if (!leftIsLiteral && rightIsLiteral) {
     const discriminantText = serializeNode(left);
-    const valueText = getLiteralValue(right);
+    const valueText = getLiteralCanonicalKey(right);
+    if (valueText === null) return null;
     return { discriminant: discriminantText, value: valueText, node };
   }
 
   if (leftIsLiteral && !rightIsLiteral) {
     const discriminantText = serializeNode(right);
-    const valueText = getLiteralValue(left);
+    const valueText = getLiteralCanonicalKey(left);
+    if (valueText === null) return null;
     return { discriminant: discriminantText, value: valueText, node };
   }
 
