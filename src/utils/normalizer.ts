@@ -13,8 +13,8 @@ export function normalizeChain(chain: ChainDescriptor): NormalizedChain {
     .filter((v) => v !== "default")
     .sort();
 
-  // Create structure hash: discriminant + sorted branch values
-  const structureKey = `${chain.discriminant}|||${branchKeys.join(",")}`;
+  // Create structure hash: discriminant + sorted branch values + branch count + fallback presence
+  const structureKey = `${chain.discriminant}|||${branchKeys.join(",")}|||${chain.branches.length}|||${chain.fallback ? 1 : 0}`;
 
   // Simple non-cryptographic hash
   const structureHash = hashString(structureKey);

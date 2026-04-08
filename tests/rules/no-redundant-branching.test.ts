@@ -32,6 +32,13 @@ const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
 const y = status === 'a' ? 'Alpha' : status === 'c' ? 'Gamma' : 'Other';
         `,
       },
+      // Different branch counts on same discriminant should not group
+      {
+        code: `
+const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
+const y = status === 'a' ? 'Alpha' : status === 'b' ? 'Beta' : status === 'c' ? 'Gamma' : 'Other';
+        `,
+      },
       // Scenario 12: Intentional parallel chains suppression via ignoreDiscriminants
       {
         code: `
@@ -204,6 +211,36 @@ if (kind === 'a') {
           { messageId: "redundantBranching" },
         ],
       },
+      // Multi-statement if-else blocks — detected but no autofix
+      {
+        code: `
+let label, desc;
+if (kind === 'a') {
+  console.log('a');
+  label = 'Alpha';
+} else if (kind === 'b') {
+  console.log('b');
+  label = 'Beta';
+} else {
+  console.log('other');
+  label = 'Other';
+}
+if (kind === 'a') {
+  console.log('a');
+  desc = 'The letter A';
+} else if (kind === 'b') {
+  console.log('b');
+  desc = 'The letter B';
+} else {
+  console.log('other');
+  desc = 'Unknown';
+}
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
       // Scenario 8: mixed ternary + if-else normalized => violation
       // Mixed chains where not all are const declarations => no autofix
       {
@@ -278,6 +315,27 @@ const _status_LOOKUP = {
 };
 const _status_DEFAULT = { x: 'other', y: 'Other' };
 const { x, y } = _status_LOOKUP[status] ?? _status_DEFAULT;
+        `,
+        errors: [
+          { messageId: "redundantBranching" },
+          { messageId: "redundantBranching" },
+        ],
+      },
+      // Variable name collision — lookup name already exists
+      {
+        code: `
+const _status_LOOKUP = 'existing';
+const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
+const y = status === 'a' ? 'Alpha' : status === 'b' ? 'Beta' : 'Other';
+        `,
+        output: `
+const _status_LOOKUP = 'existing';
+const _status_LOOKUP_2 = {
+  "a": { x: 'alpha', y: 'Alpha' },
+  "b": { x: 'beta', y: 'Beta' }
+};
+const _status_DEFAULT_2 = { x: 'other', y: 'Other' };
+const { x, y } = _status_LOOKUP_2[status] ?? _status_DEFAULT_2;
         `,
         errors: [
           { messageId: "redundantBranching" },

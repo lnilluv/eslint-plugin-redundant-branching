@@ -170,6 +170,30 @@ function sanitizeVarName(name: string): string {
     .substring(0, 30);
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function nameExists(name: string, sourceText: string): boolean {
+  const pattern = new RegExp(`\\b${escapeRegExp(name)}\\b`);
+  return pattern.test(sourceText);
+}
+
+function uniqueName(baseName: string, sourceText: string): string {
+  if (!nameExists(baseName, sourceText)) {
+    return baseName;
+  }
+
+  let suffix = 2;
+  let candidate = `${baseName}_${suffix}`;
+  while (nameExists(candidate, sourceText)) {
+    suffix++;
+    candidate = `${baseName}_${suffix}`;
+  }
+
+  return candidate;
+}
+
 /**
  * Extract the "leaf value" from a consequent node.
  * For ternaries, the consequent is the expression directly.
@@ -213,14 +237,34 @@ function extractLeafValue(
  */
 export function generateLookupFix(
   chains: ChainDescriptor[],
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (node: types.TSESTree.Node) => string },
+  sourceText: string
 ): AutofixResult | null {
   if (chains.length === 0) return null;
 
   const firstChain = chains[0]!;
   const discriminant = firstChain.discriminant;
-  const lookupName = `_${sanitizeVarName(discriminant)}_LOOKUP`;
-  const defaultName = `_${sanitizeVarName(discriminant)}_DEFAULT`;
+  const sanitizedDiscriminant = sanitizeVarName(discriminant);
+  const baseLookupName = `_${sanitizedDiscriminant}_LOOKUP`;
+  const baseDefaultName = `_${sanitizedDiscriminant}_DEFAULT`;
+
+  let lookupName = baseLookupName;
+  let defaultName = baseDefaultName;
+
+  if (nameExists(baseLookupName, sourceText) || nameExists(baseDefaultName, sourceText)) {
+    let suffix = 2;
+    let lookupCandidate = `${baseLookupName}_${suffix}`;
+    let defaultCandidate = `${baseDefaultName}_${suffix}`;
+
+    while (nameExists(lookupCandidate, sourceText) || nameExists(defaultCandidate, sourceText)) {
+      suffix++;
+      lookupCandidate = `${baseLookupName}_${suffix}`;
+      defaultCandidate = `${baseDefaultName}_${suffix}`;
+    }
+
+    lookupName = uniqueName(lookupCandidate, sourceText);
+    defaultName = uniqueName(defaultCandidate, sourceText);
+  }
 
   // Check if any leaf has unsafe side effects
   let canFix = true;

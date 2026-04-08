@@ -5,7 +5,7 @@ import { extractDiscriminant, getLiteralCanonicalKey, isLiteralValue } from "./d
 
 export interface ChainExtractorResult {
   descriptor: ChainDescriptor | null;
-  scopeId: number;
+  scopeId: string;
   assignmentTarget: string | null;
 }
 
@@ -54,7 +54,7 @@ export function extractTernaryChain(
   const fallback = current;
 
   if (branches.length < 2) {
-    return { descriptor: null, scopeId: 0, assignmentTarget: null };
+    return { descriptor: null, scopeId: "", assignmentTarget: null };
   }
 
   const discriminants = branches.map((b) => {
@@ -66,12 +66,12 @@ export function extractTernaryChain(
   });
 
   if (discriminants.some((d) => d === null)) {
-    return { descriptor: null, scopeId: 0, assignmentTarget: null };
+    return { descriptor: null, scopeId: "", assignmentTarget: null };
   }
 
   const firstDisc = discriminants[0]!;
   if (!discriminants.every((d) => d === firstDisc)) {
-    return { descriptor: null, scopeId: 0, assignmentTarget: null };
+    return { descriptor: null, scopeId: "", assignmentTarget: null };
   }
 
   let discNode: types.TSESTree.Node = node.test;
@@ -100,10 +100,10 @@ export function extractTernaryChain(
     node,
     assignmentTarget: null,
     loc: node.loc!,
-    scopeId: 0,
+    scopeId: "",
   };
 
-  return { descriptor, scopeId: 0, assignmentTarget: null };
+  return { descriptor, scopeId: "", assignmentTarget: null };
 }
 
 /**
@@ -124,14 +124,12 @@ export function extractIfElseChain(
   let current: types.TSESTree.IfStatement | null = node;
 
   while (current) {
-    if ((current.consequent as types.TSESTree.Node).type !== AST_NODE_TYPES.BlockStatement) {
-      if ((current.consequent as types.TSESTree.Node).type !== AST_NODE_TYPES.ReturnStatement) {
-        return { descriptor: null, scopeId: 0, assignmentTarget: null };
-      }
-    } else if (
-      (current.consequent as types.TSESTree.BlockStatement).body.length > 1
+    // Accept BlockStatement or ReturnStatement as consequent
+    if (
+      current.consequent.type !== AST_NODE_TYPES.BlockStatement &&
+      current.consequent.type !== AST_NODE_TYPES.ReturnStatement
     ) {
-      return { descriptor: null, scopeId: 0, assignmentTarget: null };
+      return { descriptor: null, scopeId: "", assignmentTarget: null };
     }
 
     const discInfo = extractDiscriminant(current.test as types.TSESTree.BinaryExpression);
@@ -158,12 +156,12 @@ export function extractIfElseChain(
         });
 
         if (discriminants.some((d) => d === null)) {
-          return { descriptor: null, scopeId: 0, assignmentTarget: null };
+          return { descriptor: null, scopeId: "", assignmentTarget: null };
         }
 
         const firstDisc = discriminants[0]!;
         if (!discriminants.every((d) => d === firstDisc)) {
-          return { descriptor: null, scopeId: 0, assignmentTarget: null };
+          return { descriptor: null, scopeId: "", assignmentTarget: null };
         }
 
         let discNode: types.TSESTree.Node = node.test;
@@ -192,17 +190,17 @@ export function extractIfElseChain(
           node,
           assignmentTarget: null,
           loc: node.loc!,
-          scopeId: 0,
+          scopeId: "",
         };
 
-        return { descriptor, scopeId: 0, assignmentTarget: null };
+        return { descriptor, scopeId: "", assignmentTarget: null };
       }
     } else {
-      return { descriptor: null, scopeId: 0, assignmentTarget: null };
+      return { descriptor: null, scopeId: "", assignmentTarget: null };
     }
   }
 
-  return { descriptor: null, scopeId: 0, assignmentTarget: null };
+  return { descriptor: null, scopeId: "", assignmentTarget: null };
 }
 
 /**
@@ -220,7 +218,7 @@ export function extractSwitchChain(
   for (const caseClause of node.cases) {
     if (caseClause.test === null) {
       if (fallback !== null) {
-        return { descriptor: null, scopeId: 0, assignmentTarget: null };
+        return { descriptor: null, scopeId: "", assignmentTarget: null };
       }
       fallback = caseClause;
     } else {
@@ -243,7 +241,7 @@ export function extractSwitchChain(
   }
 
   if (switchBranches.length < 2) {
-    return { descriptor: null, scopeId: 0, assignmentTarget: null };
+    return { descriptor: null, scopeId: "", assignmentTarget: null };
   }
 
   const descriptor: ChainDescriptor = {
@@ -255,8 +253,8 @@ export function extractSwitchChain(
     node,
     assignmentTarget: null,
     loc: node.loc!,
-    scopeId: 0,
+    scopeId: "",
   };
 
-  return { descriptor, scopeId: 0, assignmentTarget: null };
+  return { descriptor, scopeId: "", assignmentTarget: null };
 }

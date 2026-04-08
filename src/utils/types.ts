@@ -15,7 +15,7 @@ export interface ChainDescriptor {
   node: types.TSESTree.Node;
   assignmentTarget: string | null;
   loc: types.TSESTree.SourceLocation;
-  scopeId: number;
+  scopeId: string;
 }
 
 export interface NormalizedChain {

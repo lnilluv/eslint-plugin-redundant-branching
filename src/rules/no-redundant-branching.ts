@@ -194,7 +194,7 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
             ).name;
           }
           result.descriptor.assignmentTarget = assignmentTarget;
-          result.descriptor.scopeId = hashString(getScopeKey(node));
+          result.descriptor.scopeId = getScopeKey(node);
           chains.push(result.descriptor);
         }
       },
@@ -211,7 +211,7 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
         }
         const result = extractIfElseChain(node, { getSource });
         if (result.descriptor) {
-          result.descriptor.scopeId = hashString(getScopeKey(node));
+          result.descriptor.scopeId = getScopeKey(node);
           chains.push(result.descriptor);
         }
       },
@@ -220,7 +220,7 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
         if (!includeSwitchStatements) return;
         const result = extractSwitchChain(node, { getSource });
         if (result.descriptor) {
-          result.descriptor.scopeId = hashString(getScopeKey(node));
+          result.descriptor.scopeId = getScopeKey(node);
           chains.push(result.descriptor);
         }
       },
@@ -236,7 +236,7 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
           if (ignoreDiscriminants.has(firstDisc)) continue;
 
           // Group by scope within this discriminant+structure group
-          const scopeGroups = new Map<number, ChainDescriptor[]>();
+          const scopeGroups = new Map<string, ChainDescriptor[]>();
           for (const chain of group) {
             const existing = scopeGroups.get(chain.scopeId) ?? [];
             existing.push(chain);
@@ -301,7 +301,7 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
 
             // Generate a single fix for the entire group (only if all can fix AND contiguous)
             const fixResult = allCanFix && chainsAreContiguous
-              ? generateLookupFix(topLevelChains, { getSource })
+              ? generateLookupFix(topLevelChains, { getSource }, sourceCodeText)
               : null;
 
             // Report each chain in the group
@@ -341,15 +341,5 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
     return rule;
   },
 };
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash);
-}
 
 export default rule;
