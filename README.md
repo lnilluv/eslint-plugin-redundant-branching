@@ -142,6 +142,20 @@ This plugin breaks the cycle. Run it in CI to catch accumulated redundancy befor
 
 ---
 
+## AI harness integration
+
+This plugin also integrates with AI coding agents, so it flags redundant branching while code is being generated instead of waiting for CI. This repository includes setups for three harnesses: pi.dev, Claude Code, and opencode.
+
+| Harness | Mechanism | Setup |
+|---------|-----------|-------|
+| pi.dev | Extension with auto-lint and `/lint-branching` command | `pi install npm:pi-lookup-lint` |
+| Claude Code | PostToolUse hook runs ESLint after every file write | Copy `.claude/` from `harness-configs/claude-code/` |
+| opencode | Plugin runs ESLint after every file edit | Copy `.opencode/` from `harness-configs/opencode/` |
+
+See `harness-configs/README.md` for full setup instructions.
+
+---
+
 ## Architecture
 
 ```
