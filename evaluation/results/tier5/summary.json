@@ -1,0 +1,13 @@
+{
+  "tier": "tier5",
+  "plugin_path": "/Users/pryda/Documents/repos/eslint-plugin-redundant-branching/evaluation/scripts/../../dist/index.js",
+  "corpus_dir": "/Users/pryda/Documents/repos/eslint-plugin-redundant-branching/evaluation/scripts/../corpus/tier5",
+  "total_files_analyzed": 120,
+  "files_processed": 120,
+  "files_with_detections": 0,
+  "total_detections": 0,
+  "failed_files": 120,
+  "prevalence_rate": 0.000000,
+  "detection_density_per_positive_file": 0,
+  "analyzed_at_utc": "2026-04-08T15:21:24Z"
+}
