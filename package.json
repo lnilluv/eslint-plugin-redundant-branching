@@ -1,0 +1,43 @@
+{
+  "name": "eslint-plugin-redundant-branching",
+  "version": "0.0.1",
+  "description": "Detect redundant conditional chains and suggest lookup tables",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ tests/",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "eslint-rule"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "eslint": "9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.10",
+    "@typescript-eslint/parser": "8.58.1",
+    "@typescript-eslint/rule-tester": "8.58.1",
+    "@typescript-eslint/typescript-estree": "8.58.1",
+    "@typescript-eslint/utils": "8.58.1",
+    "eslint": "9.21.0",
+    "typescript": "5.8.2",
+    "vitest": "2.1.9"
+  }
+}
