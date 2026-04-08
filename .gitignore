@@ -5,5 +5,12 @@ dist/
 coverage/
 .idea/
 .vscode/
+
+# Corpora — large, third-party, or generated; never commit
 experiment/human-corpus/
 experiment/ai-corpus/
+evaluation/corpus/
+eval-results/
+
+# Collection infrastructure output
+experiment/results/human-corpus-manifest.tsv
