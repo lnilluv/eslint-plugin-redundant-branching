@@ -1,21 +1,81 @@
 # eslint-plugin-redundant-branching
 
-Detect when multiple conditional chains branch on the same discriminant with the same structure but different leaf values, and generate an autofix that produces a lookup table.
+[![npm version](https://img.shields.io/npm/v/eslint-plugin-redundant-branching.svg)](https://www.npmjs.com/package/eslint-plugin-redundant-branching)
+[![license](https://img.shields.io/npm/l/eslint-plugin-redundant-branching.svg)](LICENSE)
+
+> Detect redundant conditional chains and automatically transform them into lookup tables.
+
+## The Problem
+
+When the same conditional logic is repeated with different outputs, the code becomes harder to maintain and extend:
+
+```typescript
+// ❌ Redundant — same branching, different values
+const statusLabel =
+  status === "loading" ? "Loading..."
+  : status === "error" ? "Error occurred"
+  : status === "success" ? "Done!"
+  : "Unknown";
+
+const statusIcon =
+  status === "loading" ? "⏳"
+  : status === "error" ? "❌"
+  : status === "success" ? "✅"
+  : "❓";
+
+const statusColor =
+  status === "loading" ? "blue"
+  : status === "error" ? "red"
+  : status === "success" ? "green"
+  : "gray";
+```
+
+## The Solution
+
+This plugin detects these patterns and auto-fixes them into clean lookup tables:
+
+```typescript
+// ✅ Clean — single source of truth
+const _status_LOOKUP = {
+  loading: { statusLabel: "Loading...", statusIcon: "⏳", statusColor: "blue" },
+  error:   { statusLabel: "Error occurred", statusIcon: "❌", statusColor: "red" },
+  success: { statusLabel: "Done!", statusIcon: "✅", statusColor: "green" }
+};
+const _status_DEFAULT = { statusLabel: "Unknown", statusIcon: "❓", statusColor: "gray" };
+const { statusLabel, statusIcon, statusColor } = _status_LOOKUP[status] ?? _status_DEFAULT;
+```
+
+---
 
 ## Installation
 
 ```bash
+# npm
 npm install --save-dev eslint-plugin-redundant-branching
+
+# yarn
+yarn add --dev eslint-plugin-redundant-branching
+
+# pnpm
+pnpm add --save-dev eslint-plugin-redundant-branching
 ```
 
-## Usage
+**Requirements:**
+- ESLint >= 9.0.0 (flat config)
+- TypeScript >= 4.0.0 (if using TypeScript)
 
-### Flat Config (ESLint v9)
+---
 
-```js
+## Quick Start
+
+### Flat Config (ESLint v9+)
+
+```javascript
+// eslint.config.js
 import redundantBranching from "eslint-plugin-redundant-branching";
 
 export default [
+  // ...your other config
   {
     plugins: {
       "redundant-branching": redundantBranching,
@@ -27,106 +87,124 @@ export default [
 ];
 ```
 
-### Configuration Options
+### Recommended Config
 
-```js
+```javascript
+// eslint.config.js
+import redundantBranching from "eslint-plugin-redundant-branching";
+
+export default [
+  redundantBranching.configs.recommended,
+  // ...your other config
+];
+```
+
+---
+
+## Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `threshold` | `number` | `2` | Minimum number of chains required to trigger a report |
+| `includeSwitchStatements` | `boolean` | `true` | Include `switch` statements in detection |
+| `includeIfElseChains` | `boolean` | `true` | Include `if/else if/else` chains in detection |
+| `ignoreDiscriminants` | `string[]` | `[]` | Discriminants to ignore (for intentional parallel chains) |
+
+### Example Configuration
+
+```javascript
 {
   rules: {
     "redundant-branching/no-redundant-branching": ["error", {
-      threshold: 2,              // Minimum number of chains to report (default: 2)
-      includeSwitchStatements: true,  // Include switch statements (default: true)
-      includeIfElseChains: true,     // Include if-else chains (default: true)
+      threshold: 3,                    // Only report when 3+ chains found
+      includeSwitchStatements: true,
+      includeIfElseChains: true,
+      ignoreDiscriminants: ["theme"]   // Allow parallel theme-based chains
     }]
   }
 }
 ```
 
-### Recommended Config
+---
 
-```js
-import redundantBranching from "eslint-plugin-redundant-branching";
+## What Gets Detected
 
-export default [
-  redundantBranching.configs.recommended,
-];
+### ✅ Detected (will be flagged)
+
+```typescript
+// Ternary chains on same discriminant
+const a = x === 1 ? "one" : x === 2 ? "two" : "other";
+const b = x === 1 ? "1️⃣" : x === 2 ? "2️⃣" : "❓";
+
+// If-else chains
+if (type === "A") result = "alpha";
+else if (type === "B") result = "beta";
+else result = "unknown";
+
+// Switch statements
+switch (type) {
+  case "A": return "alpha";
+  case "B": return "beta";
+}
+
+// Mixed forms (ternary + switch)
+const a = type === "A" ? "alpha" : "other";
+switch (type) {
+  case "A": return "alpha";
+}
 ```
 
-## Rule Details
+### ✅ Not Detected (intentionally valid)
 
-This rule detects when 2+ conditional chains in the same scope share:
-- The **same discriminant** (the variable being compared)
-- The **same set of branch keys** (the literal values being tested)
-- But have **different leaf values**
+```typescript
+// Different discriminants — intentional parallel logic
+const buttonClass = theme === "dark" ? "btn-dark" : "btn-light";
+const textClass = mode === "dark" ? "text-white" : "text-black";
 
-### Examples
+// Different branch sets — no structural redundancy
+const x = status === "a" ? 1 : status === "b" ? 2 : 3;
+const y = status === "a" ? 10 : status === "c" ? 30 : 40;  // 'b' vs 'c'
 
-#### Detected: Redundant branching
+// Below threshold
+const x = status === "a" ? 1 : 2;  // Single chain
 
-```ts
-// ❌ Multiple chains branch on the same discriminant
-const clientSyncStatus =
-  sync.uploadStatus === "blocked" ? "blocked"
-  : sync.connectionStatus === "offline" ? "offline"
-  : sync.connectionStatus === "starting" ? "syncing"
-  : "synced";
-
-const clientSyncTitle =
-  clientSyncStatus === "blocked" ? "Client sync blocked"
-  : clientSyncStatus === "offline" ? "Client sync offline"
-  : clientSyncStatus === "syncing" ? "Client sync in progress"
-  : "Client sync healthy";
-
-const syncStateLabel =
-  clientSyncStatus === "blocked" ? "Blocked"
-  : clientSyncStatus === "offline" ? "Offline"
-  : clientSyncStatus === "syncing" ? "Syncing"
-  : "Synced";
+// Suppressed via ignoreDiscriminants
+const buttonVariant = theme === "primary" ? "btn-primary" : "btn-secondary";
+const textVariant = theme === "primary" ? "text-primary" : "text-secondary";
+// With: ignoreDiscriminants: ["theme"]
 ```
 
-#### Auto-fixed: Lookup table
+---
 
-```ts
-// ✅ Auto-fixed to a lookup table
-const _SYNC_LOOKUP = {
-  blocked: { clientSyncStatus: "blocked", clientSyncTitle: "Client sync blocked", syncStateLabel: "Blocked" },
-  offline: { clientSyncStatus: "offline", clientSyncTitle: "Client sync offline", syncStateLabel: "Offline" },
-  starting: { clientSyncStatus: "syncing", clientSyncTitle: "Client sync in progress", syncStateLabel: "Syncing" },
-};
-const { clientSyncStatus, clientSyncTitle, syncStateLabel } = _SYNC_LOOKUP[sync.uploadStatus] ?? {};
-```
+## Safety
 
-### Supported Forms
-
-- **Ternary chains**: `a ? x : b ? y : c ? z : d`
-- **If-else chains**: `if (a) {} else if (b) {} else {}`
-- **Switch statements**: `switch (x) { case 'a': ... case 'b': ... default: ... }`
-- **Mixed forms**: A ternary and a switch can be grouped together
-
-### Edge Cases
+The autofix is **conservative** — it only transforms code when it's 100% safe:
 
 | Scenario | Behavior |
 |----------|----------|
-| Different discriminants | Valid (no error) |
-| Different branch sets | Valid (no error) |
-| Side effects in leaves (e.g., `doSomething()`) | Reports violation but skips autofix |
-| Chains in different functions | Valid (no error) |
-| Threshold > 2 | Only reports when chains >= threshold |
+| Side effects in branches | Reports, but no autofix |
+| Non-contiguous chains | Reports, but no autofix |
+| Non-const declarations | Reports, but no autofix |
+| Complex expressions | Reports, but no autofix |
 
-### Not Reported
-
-```ts
-// ✅ Different discriminants - intentional parallel branching
-const buttonClass = theme === 'primary' ? 'btn-primary' : 'btn-secondary';
-const textClass = color === 'primary' ? 'text-primary' : 'text-secondary';
-
-// ✅ Different branch sets (no overlap)
-const x = status === 'a' ? 'alpha' : status === 'b' ? 'beta' : 'other';
-const y = status === 'a' ? 'Alpha' : status === 'c' ? 'Gamma' : 'Other';
-```
+---
 
 ## Motivation
 
-AI models (and sometimes humans) generate code where the same branching logic is repeated multiple times with different leaf values. Each expression is locally fine, but together they're redundant.
+This pattern commonly appears in:
+
+- **AI-generated code** — LLMs often repeat conditional logic
+- **UI component libraries** — theme/style mappings
+- **API response handling** — status code mappings
+- **Internationalization** — locale-based conditional text
+
+The lookup table pattern is:
+- **More readable** — data is separated from logic
+- **Easier to extend** — add a new key in one place
+- **More maintainable** — single source of truth
+- **Better for bundlers** — static data can be optimized
+
+---
 
 ## Architecture
 
@@ -134,15 +212,41 @@ AI models (and sometimes humans) generate code where the same branching logic is
 src/
 ├── index.ts                      # Plugin entry point
 ├── rules/
-│   └── no-redundant-branching.ts  # The ESLint rule
+│   └── no-redundant-branching.ts  # Main ESLint rule
 └── utils/
-    ├── types.ts                  # Shared type definitions
-    ├── discriminant.ts            # Extract discriminant from comparisons
-    ├── chain-extractor.ts        # AST → ChainDescriptor for ternary/if-else/switch
-    ├── normalizer.ts             # Structure normalization + hashing
-    └── autofix.ts                # Lookup table code generation
+    ├── types.ts                  # TypeScript definitions
+    ├── discriminant.ts           # Extract discriminant from comparisons
+    ├── chain-extractor.ts        # Parse ternary/if-else/switch chains
+    ├── normalizer.ts             # Group chains by structure
+    └── autofix.ts                # Generate lookup table code
 ```
+
+---
+
+## Contributing
+
+Contributions welcome! Please open an issue or PR.
+
+```bash
+# Clone
+git clone https://github.com/lnilluv/eslint-plugin-redundant-branching.git
+cd eslint-plugin-redundant-branching
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run type check
+npm run typecheck
+
+# Build
+npm run build
+```
+
+---
 
 ## License
 
-MIT
+MIT © [lnilluv](https://github.com/lnilluv)
