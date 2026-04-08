@@ -7,7 +7,7 @@ export interface Branch {
 }
 
 export interface ChainDescriptor {
-  kind: "ternary" | "if-else" | "switch";
+  kind: "ternary" | "if-else" | "switch" | "early-return";
   discriminant: string;
   discriminantNode: types.TSESTree.Node;
   branches: Branch[];

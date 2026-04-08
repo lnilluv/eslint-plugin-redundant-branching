@@ -1,7 +1,12 @@
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type { RuleListener, RuleModule } from "@typescript-eslint/utils/ts-eslint";
 import type * as types from "@typescript-eslint/types";
-import { extractTernaryChain, extractIfElseChain, extractSwitchChain } from "../utils/chain-extractor.js";
+import {
+  extractTernaryChain,
+  extractIfElseChain,
+  extractSwitchChain,
+  extractEarlyReturnChain,
+} from "../utils/chain-extractor.js";
 import { groupChains } from "../utils/normalizer.js";
 import { generateLookupFix } from "../utils/autofix.js";
 import type { ChainDescriptor } from "../utils/types.js";
@@ -80,6 +85,39 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
     const getSource = (node: types.TSESTree.Node): string => {
       return sourceCode.getText(node);
     };
+
+    function maybeCollectEarlyReturnChain(
+      functionBody: types.TSESTree.BlockStatement,
+      scopeNode: types.TSESTree.Node
+    ): void {
+      if (!includeIfElseChains) return;
+
+      const result = extractEarlyReturnChain(functionBody, { getSource });
+      if (result.descriptor) {
+        result.descriptor.scopeId = getScopeKey(scopeNode);
+
+        for (const branch of result.descriptor.branches) {
+          const parent = branch.consequent.parent;
+          let reportNode: types.TSESTree.Node = result.descriptor.node;
+
+          if (parent?.type === AST_NODE_TYPES.IfStatement) {
+            reportNode = parent;
+          } else if (
+            parent?.type === AST_NODE_TYPES.BlockStatement &&
+            parent.parent?.type === AST_NODE_TYPES.IfStatement
+          ) {
+            reportNode = parent.parent;
+          }
+
+          const branchDescriptor: ChainDescriptor = {
+            ...result.descriptor,
+            node: reportNode,
+            loc: reportNode.loc ?? result.descriptor.loc,
+          };
+          chains.push(branchDescriptor);
+        }
+      }
+    }
 
     /**
      * Get a scope key for a node based on its enclosing function scope.
@@ -222,6 +260,33 @@ const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
         if (result.descriptor) {
           result.descriptor.scopeId = getScopeKey(node);
           chains.push(result.descriptor);
+        }
+      },
+
+      FunctionDeclaration(node) {
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      FunctionExpression(node) {
+        if (node.parent?.type === AST_NODE_TYPES.MethodDefinition) {
+          return;
+        }
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      ArrowFunctionExpression(node) {
+        if (node.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.body, node);
+        }
+      },
+
+      MethodDefinition(node) {
+        if (node.value.body && node.value.body.type === AST_NODE_TYPES.BlockStatement) {
+          maybeCollectEarlyReturnChain(node.value.body, node);
         }
       },
 
