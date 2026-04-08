@@ -74,12 +74,7 @@ export function getLiteralValue(node: types.TSESTree.Node): string {
 export function extractDiscriminant(
   node: types.TSESTree.BinaryExpression
 ): DiscriminantInfo | null {
-  if (
-    node.operator !== "===" &&
-    node.operator !== "==" &&
-    node.operator !== "!==" &&
-    node.operator != "!="
-  ) {
+  if (node.operator !== "===") {
     return null;
   }
 

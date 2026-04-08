@@ -17,7 +17,7 @@ type Options = [
 
 export const name = "no-redundant-branching" as const;
 
-const rule: RuleModule<"redundantBranching", Options> = {
+const rule: RuleModule<"redundantBranching" | "manualRefactor", Options> = {
   meta: {
     type: "problem",
     docs: {
@@ -25,6 +25,7 @@ const rule: RuleModule<"redundantBranching", Options> = {
         "Detect redundant conditional chains branching on the same discriminant",
     },
     fixable: "code",
+    hasSuggestions: true,
     schema: [
       {
         type: "object",
@@ -54,6 +55,8 @@ const rule: RuleModule<"redundantBranching", Options> = {
     messages: {
       redundantBranching:
         "{{count}} conditional chains branch on '{{discriminant}}' with the same structure. Consider a lookup table. See lines {{lines}}.",
+      manualRefactor:
+        "Refactor these chains into a lookup table manually (autofix not safe for this pattern).",
     },
   },
   defaultOptions: [
@@ -283,6 +286,7 @@ const rule: RuleModule<"redundantBranching", Options> = {
 
             // Report each chain in the group
             for (const chain of topLevelChains) {
+              const hasFix = fixResult?.singleReplacement && fixResult.canFix;
               context.report({
                 node: chain.node,
                 messageId: "redundantBranching",
@@ -291,15 +295,22 @@ const rule: RuleModule<"redundantBranching", Options> = {
                   discriminant,
                   lines,
                 },
-                fix:
-                  fixResult?.singleReplacement && fixResult.canFix
-                    ? ( fixer) => {
-                        return fixer.replaceTextRange(
-                          [firstStart, lastEnd],
-                          fixResult.singleReplacement
-                        );
-                      }
-                    : undefined,
+                fix: hasFix
+                  ? ( fixer) => {
+                      return fixer.replaceTextRange(
+                        [firstStart, lastEnd],
+                        fixResult.singleReplacement
+                      );
+                    }
+                  : undefined,
+                suggest: hasFix
+                  ? undefined
+                  : [
+                      {
+                        messageId: "manualRefactor",
+                        fix: () => null,
+                      },
+                    ],
               });
             }
           }
