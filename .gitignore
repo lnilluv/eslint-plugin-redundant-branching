@@ -5,3 +5,5 @@ dist/
 coverage/
 .idea/
 .vscode/
+experiment/human-corpus/
+experiment/ai-corpus/
