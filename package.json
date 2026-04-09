@@ -26,6 +26,10 @@
     "eslint-plugin",
     "eslint-rule"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lnilluv/eslint-plugin-lookup-table"
+  },
   "license": "MIT",
   "peerDependencies": {
     "eslint": "9.0.0"

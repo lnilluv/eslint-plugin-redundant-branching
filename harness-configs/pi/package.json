@@ -11,5 +11,10 @@
     "eslint-plugin-lookup-table": ">=0.0.1"
   },
   "keywords": ["pi-extension", "eslint", "lookup-table", "lint"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lnilluv/eslint-plugin-lookup-table",
+    "directory": "harness-configs/pi"
+  },
   "license": "MIT"
 }
