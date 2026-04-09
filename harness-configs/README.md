@@ -15,11 +15,11 @@ export default [lookupTable.configs.recommended];
 
 ## pi.dev
 
-- Install the extension:
+- Install the extension (bundled — no separate package needed):
 ```bash
-pi install npm:pi-lookup-lint
+pi install npm:eslint-plugin-lookup-table
 ```
-- It runs ESLint after every write/edit operation.
+- It runs the no-redundant-branching rule after every write/edit operation.
 - It feeds diagnostics back to the LLM in the same session.
 - It adds `/lint-branching` for manual scans.
 
