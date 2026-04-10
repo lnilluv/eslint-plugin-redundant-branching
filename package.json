@@ -34,6 +34,7 @@
     "eslint-plugin",
     "eslint-rule",
     "pi-extension",
+    "pi-package",
     "lookup-table",
     "ai-slop",
     "lint"
