@@ -3,13 +3,13 @@
 [![npm version](https://img.shields.io/npm/v/eslint-plugin-lookup-table.svg)](https://www.npmjs.com/package/eslint-plugin-lookup-table)
 [![license](https://img.shields.io/npm/l/eslint-plugin-lookup-table.svg)](LICENSE)
 
-Finds repeated conditional logic on the same variable and replaces it with a lookup table.
+Finds repeated branching on the same discriminant and, when safe, autofixes it into a lookup table.
 
 ## Why
 
-Code that branches on the same discriminant multiple times scatters related data across parallel structures. Adding a new case means editing every branch. Miss one and you ship a bug.
+Code that branches on the same discriminant more than once scatters related data across separate conditionals. Adding a new case means updating each branch. Miss one and the behavior drifts.
 
-This pattern spreads fast in AI-assisted workflows. When existing code contains a ternary chain, AI models copy the style instead of refactoring.
+This rule targets a narrow failure mode in AI-assisted coding: incremental copy-paste edits that add another branch instead of collapsing repeated branching into a lookup table.
 
 ## Before
 
@@ -130,21 +130,17 @@ The autofix runs only when the transformation is safe:
 
 ---
 
-## How AI spreads this pattern
+## AI-assisted edits
 
-AI models are next-token predictors. When context contains a ternary chain, the most likely continuation is another ternary chain — not a refactoring into a lookup table.
+This rule catches a narrow failure mode in AI-assisted coding: incremental copy-paste changes that add another branch instead of collapsing repeated branching into a lookup table. It does not address every kind of AI-generated bug.
 
-We tested this with Claude Sonnet 4, GPT-4o, and GPT-4o-mini. Given existing code with one chain and the instruction "add a label for the same statuses," every model added another chain. Every time. Across 19 test scenarios.
-
-The same models write lookup tables from scratch when given no existing code. The pattern emerges through mimicry, not inability.
-
-This plugin breaks the cycle. Run it in CI to catch accumulated redundancy before it merges.
+The extension runs local ESLint logic. It does not call an external service, make a separate model request, or send code to another API. It adds a small local lint step, so expect a bit of CPU use and some extra latency after edits. In pi.dev, a short diagnostic can be fed back into the same session when the rule finds an issue.
 
 ---
 
 ## AI harness integration
 
-This plugin integrates with AI coding agents to flag redundant branching while code is being generated instead of waiting for CI.
+These configs run the rule after edits so you can catch redundant branching during the session, not just in CI.
 
 ### pi.dev
 
@@ -154,19 +150,15 @@ Bundled — no separate package needed.
 pi install npm:eslint-plugin-lookup-table
 ```
 
-The extension auto-lints every write/edit on TypeScript and JavaScript files. It also registers a `/lint-branching` command for manual scans.
+The extension runs local ESLint after write/edit events on TypeScript and JavaScript files. If it finds a violation, it can surface a short diagnostic back into the same session. It also registers a `/lint-branching` command for manual scans.
 
 ### Claude Code
 
-PostToolUse hook runs ESLint after every file write:
-
-Copy `.claude/` from `harness-configs/claude-code/`
+Copy `.claude/` from `harness-configs/claude-code/` into your project root. The PostToolUse hook runs local ESLint after writes and edits on `.ts` and `.tsx` files.
 
 ### opencode
 
-Plugin runs ESLint after every file edit:
-
-Copy `.opencode/` from `harness-configs/opencode/`
+Copy `.opencode/` from `harness-configs/opencode/` into your project root. The plugin runs local ESLint after writes and edits on TypeScript files and logs diagnostics for the session.
 
 ---
 
@@ -204,4 +196,4 @@ npm run build
 ## License
 
 MIT
-# CI provenance test
+
