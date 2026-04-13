@@ -105,7 +105,7 @@ export default function (pi: any) {
       ctx.ui.notify("Scanning for redundant branching patterns…", "info");
       try {
         const lint = getEslint();
-        const results = await lint.lintFiles(["**/*.ts", "**/*.tsx"]);
+        const results = await lint.lintFiles(["**/*.{ts,tsx}"]);
         const issues = results.flatMap((r) =>
           r.messages
             .filter((m) => m.ruleId === "lookup-table/no-redundant-branching")
