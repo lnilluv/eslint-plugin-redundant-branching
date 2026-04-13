@@ -4,16 +4,33 @@ import path from "node:path";
 import process from "node:process";
 import registerPiExtension from "../src/pi-extension.js";
 
-type NotificationLevel = "info" | "success" | "warning" | "error";
+/* eslint-disable no-unused-vars */
 
-interface PiHandlers {
-  session_start: unknown;
-  tool_result: unknown;
+export type NotificationLevel = "info" | "success" | "warning" | "error";
+
+export interface ToolResultEvent {
+  toolName: string;
+  input?: {
+    path?: string;
+    content?: string;
+  };
+  content: unknown[];
 }
 
-interface RegisteredCommand {
+export interface PiHandlers {
+  session_start: () => void | Promise<void>;
+  tool_result: (event: ToolResultEvent) => void | Promise<unknown>;
+}
+
+export interface RegisteredCommandContext {
+  ui: {
+    notify(message: string, level: NotificationLevel): void;
+  };
+}
+
+export interface RegisteredCommand {
   description: string;
-  handler: unknown;
+  handler: (args: string, ctx: RegisteredCommandContext) => void | Promise<void>;
 }
 
 class Harness {
@@ -34,15 +51,20 @@ class Harness {
   }
 }
 
+function assertCommandRegistered(
+  harness: Harness,
+): asserts harness is Harness & { command: RegisteredCommand } {
+  if (!harness.command) {
+    throw new Error("lint-branching command was not registered");
+  }
+}
+
 describe("pi extension /lint-branching command", () => {
   function createHarness() {
     const harness = new Harness();
 
     registerPiExtension(harness);
-
-    if (!harness.command) {
-      throw new Error("lint-branching command was not registered");
-    }
+    assertCommandRegistered(harness);
 
     return harness;
   }
@@ -67,9 +89,15 @@ describe("pi extension /lint-branching command", () => {
 
     try {
       process.chdir(projectDir);
-      await (harness.handlers.session_start as any)?.();
 
-      await (harness.command.handler as any)("", {
+      const sessionStart = harness.handlers.session_start;
+      if (!sessionStart) {
+        throw new Error("session_start handler was not registered");
+      }
+
+      await sessionStart();
+
+      await harness.command.handler("", {
         ui: {
           notify(message: string, level: NotificationLevel) {
             notifications.push([message, level]);
