@@ -76,6 +76,9 @@ export function scopesAreCompatible(
   chain1: ChainDescriptor,
   chain2: ChainDescriptor
 ): boolean {
+  void chain1;
+  void chain2;
+
   // Use the chain's location to determine rough scope compatibility
   // In practice, for the flat config ESLint use case, we handle this
   // at the Program level. For now, allow all since we're conservative.

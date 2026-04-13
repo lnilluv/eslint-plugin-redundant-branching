@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type * as types from "@typescript-eslint/types";
 import type { AutofixResult, ChainDescriptor } from "./types.js";
@@ -154,7 +155,7 @@ function hasUnsafeSideEffects(node: types.TSESTree.Node): boolean {
  */
 function getSourceText(
   node: types.TSESTree.Node,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (...args: [types.TSESTree.Node]) => string }
 ): string {
   return sourceCode.getSource(node);
 }
@@ -203,7 +204,7 @@ function uniqueName(baseName: string, sourceText: string): string {
  */
 function extractLeafValue(
   consequent: types.TSESTree.Node,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (...args: [types.TSESTree.Node]) => string }
 ): string {
   // If it's a BlockStatement with a single ExpressionStatement, extract the value
   if (
@@ -237,7 +238,7 @@ function extractLeafValue(
  */
 export function generateLookupFix(
   chains: ChainDescriptor[],
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string },
+  sourceCode: { getSource: (...args: [types.TSESTree.Node]) => string },
   sourceText: string
 ): AutofixResult | null {
   if (chains.length === 0) return null;

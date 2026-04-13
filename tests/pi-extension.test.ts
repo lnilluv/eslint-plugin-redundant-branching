@@ -1,31 +1,70 @@
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+/* eslint-disable no-unused-vars */
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import process from "node:process";
 import registerPiExtension from "../src/pi-extension.js";
+
+type NotificationLevel = "info" | "success" | "warning" | "error";
+
+type SessionStartHandler = () => Promise<void> | void;
+
+type ToolResultEvent = {
+  toolName: string;
+  input?: {
+    path?: string;
+    content?: string;
+  };
+  content: Array<{ type: string; text?: string }>;
+};
+
+type ToolResultHandler = (...args: [ToolResultEvent]) => Promise<unknown> | unknown;
+
+type PiHandlers = {
+  session_start: SessionStartHandler;
+  tool_result: ToolResultHandler;
+};
+
+interface RegisteredCommandContext {
+  ui: {
+    notify: (...args: [string, NotificationLevel]) => void;
+  };
+}
+
+interface RegisteredCommand {
+  description: string;
+  handler: (...args: [string, RegisteredCommandContext]) => Promise<void> | void;
+}
+
+class Harness {
+  handlers: Partial<PiHandlers> = {};
+
+  command: RegisteredCommand | undefined;
+
+  on<K extends keyof PiHandlers>(event: K, handler: PiHandlers[K]): void {
+    this.handlers[event] = handler;
+  }
+
+  registerCommand(name: string, command: RegisteredCommand): void {
+    if (name !== "lint-branching") {
+      throw new Error(`Unexpected command registered: ${name}`);
+    }
+
+    this.command = command;
+  }
+}
 
 describe("pi extension /lint-branching command", () => {
   function createHarness() {
-    const handlers = new Map<string, (...args: any[]) => any>();
-    const commands = new Map<string, any>();
+    const harness = new Harness();
 
-    registerPiExtension({
-      on(event: string, handler: (...args: any[]) => any) {
-        handlers.set(event, handler);
-      },
-      registerCommand(name: string, command: any) {
-        commands.set(name, command);
-      },
-    } as any);
+    registerPiExtension(harness);
 
-    const command = commands.get("lint-branching");
-    if (!command) {
+    if (!harness.command) {
       throw new Error("lint-branching command was not registered");
     }
 
-    return {
-      handlers,
-      command,
-    };
+    return harness;
   }
 
   async function writeProject(files: Record<string, string>) {
@@ -43,16 +82,16 @@ describe("pi extension /lint-branching command", () => {
   async function runLintBranching(files: Record<string, string>) {
     const cwd = process.cwd();
     const projectDir = await writeProject(files);
-    const { handlers, command } = createHarness();
-    const notifications: Array<[string, string]> = [];
+    const harness = createHarness();
+    const notifications: Array<[string, NotificationLevel]> = [];
 
     try {
       process.chdir(projectDir);
-      await handlers.get("session_start")?.();
+      await harness.handlers.session_start?.();
 
-      await command.handler("", {
+      await harness.command.handler("", {
         ui: {
-          notify(message: string, level: string) {
+          notify(message: string, level: NotificationLevel) {
             notifications.push([message, level]);
           },
         },

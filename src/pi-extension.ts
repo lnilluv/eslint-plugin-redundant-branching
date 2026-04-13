@@ -10,6 +10,7 @@
  * Everything is bundled — no separate peer dependencies needed.
  */
 import { ESLint } from "eslint";
+import { clearTimeout, setTimeout } from "node:timers";
 import plugin from "./index.js";
 
 const LINTABLE = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);

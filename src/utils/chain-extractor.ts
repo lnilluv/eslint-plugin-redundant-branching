@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { AST_NODE_TYPES } from "@typescript-eslint/types";
 import type * as types from "@typescript-eslint/types";
 import type { Branch, ChainDescriptor } from "./types.js";
@@ -11,7 +12,7 @@ export interface ChainExtractorResult {
 
 function getSourceText(
   node: types.TSESTree.Node,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (_node: types.TSESTree.Node) => string }
 ): string {
   return sourceCode.getSource(node);
 }
@@ -99,7 +100,7 @@ function getObjectKeySignature(obj: types.TSESTree.ObjectExpression): string | n
  */
 export function extractTernaryChain(
   node: types.TSESTree.ConditionalExpression,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (_node: types.TSESTree.Node) => string }
 ): ChainExtractorResult {
   interface TernaryBranch {
     test: types.TSESTree.Node;
@@ -184,7 +185,7 @@ export function extractTernaryChain(
  */
 export function extractIfElseChain(
   node: types.TSESTree.IfStatement,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (_node: types.TSESTree.Node) => string }
 ): ChainExtractorResult {
   interface IfBranch {
     test: types.TSESTree.Node;
@@ -281,7 +282,7 @@ export function extractIfElseChain(
  */
 export function extractEarlyReturnChain(
   functionBody: types.TSESTree.BlockStatement,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (_node: types.TSESTree.Node) => string }
 ): ChainExtractorResult {
   const statements = functionBody.body;
 
@@ -378,7 +379,7 @@ export function extractEarlyReturnChain(
  */
 export function extractSwitchChain(
   node: types.TSESTree.SwitchStatement,
-  sourceCode: { getSource: (node: types.TSESTree.Node) => string }
+  sourceCode: { getSource: (_node: types.TSESTree.Node) => string }
 ): ChainExtractorResult {
   const discText = getSourceText(node.discriminant, sourceCode);
 
